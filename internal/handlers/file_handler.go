@@ -5,11 +5,11 @@ import (
     "context"
     "encoding/csv"
     "fmt"
-    "net/http"
     "log"
+    "net/http"
     "strconv"
     "strings"
-    "time"
+
     "seu_projeto/internal/database"
     "seu_projeto/pkg/utils"
 )
@@ -37,23 +37,7 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
         }
         defer file.Close()
 
-        tx, err := db.Pool.Begin(context.Background())
-        if err != nil {
-            log.Printf("Erro ao iniciar a transação: %v", err)
-            http.Error(w, "Erro interno do servidor", http.StatusInternalServerError)
-            return
-        }
-        defer tx.Rollback(context.Background())
-
-        stmt, err := tx.Prepare(context.Background(), "insert_usuario",
-            `INSERT INTO usuarios (cpf, private, incompleto, data_da_ultima_compra, ticket_medio, ticket_da_ultima_compra, loja_mais_frequente, loja_da_ultima_compra)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`)
-        if err != nil {
-            log.Printf("Erro ao preparar a declaração: %v", err)
-            http.Error(w, "Erro interno do servidor", http.StatusInternalServerError)
-            return
-        }
-
+        // Escaneando as linhas do arquivo
         scanner := bufio.NewScanner(file)
         firstLine := true
         var totalProcessed, totalSkipped int
@@ -67,92 +51,32 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            // Determinar se é CSV ou TXT e ajustar delimitadores
-            var reader *csv.Reader
-            if strings.Contains(linha, ",") {
-                reader = csv.NewReader(strings.NewReader(linha))
-                reader.Comma = ','
-            } else {
-                reader = csv.NewReader(strings.NewReader(linha))
-                reader.Comma = ' ' // espaço como delimitador para o TXT
-                reader.FieldsPerRecord = -1 // permite que tenha um número variável de campos
-            }
-
-            // Usar o reader para ler os registros
+            reader := csv.NewReader(strings.NewReader(linha))
+            reader.Comma = '\t' // Ajuste para tabulação como delimitador
             registro, err := reader.Read()
-            if err == csv.ErrFieldCount {
-                log.Printf("Número de campos inválido em: %v", linha)
+            if err != nil {
+                log.Printf("Erro ao ler registro: %v", err)
                 totalSkipped++
                 continue
-            } else if err != nil {
-                log.Printf("Erro ao ler registro: %v", err)
-                break // Saia do loop ao encontrar EOF ou erro
             }
 
-            if len(registro) < 8 {
+            registros := strings.Fields(registro[0])
+
+            if len(registros) < 8 {
                 log.Printf("Registro incompleto: %v", registro)
                 totalSkipped++
                 continue
             }
 
-            cpf := utils.RemoverCaracteresEspeciais(registro[0])
-            private, err := strconv.Atoi(registro[1])
-            if err != nil {
-                log.Printf("Erro ao converter PRIVATE: %v, registro: %v", err, registro)
-                totalSkipped++
-                continue
-            }
-            incompleto, err := strconv.Atoi(registro[2])
-            if err != nil {
-                log.Printf("Erro ao converter INCOMPLETO: %v, registro: %v", err, registro)
-                totalSkipped++
-                continue
-            }
-
-            var dataDaUltimaCompra *string
-            if strings.ToUpper(registro[3]) != "NULL" && strings.TrimSpace(registro[3]) != "" {
-                parsedDate, err := time.Parse("2006-01-02", registro[3])
-                if err != nil {
-                    log.Printf("Erro ao parsear DATA DA ÚLTIMA COMPRA: %v, registro: %v", err, registro)
-                } else {
-                    dateStr := parsedDate.Format("2006-01-02")
-                    dataDaUltimaCompra = &dateStr
-                }
-            }
-
-            var ticketMedio *float64
-            if strings.ToUpper(registro[4]) != "NULL" && strings.TrimSpace(registro[4]) != "" {
-                ticketStr := strings.ReplaceAll(registro[4], ",", ".")
-                tm, err := strconv.ParseFloat(ticketStr, 64)
-                if err != nil {
-                    log.Printf("Erro ao parsear TICKET MÉDIO: %v, registro: %v", err, registro)
-                } else {
-                    ticketMedio = &tm
-                }
-            }
-
-            var ticketDaUltimaCompra *float64
-            if strings.ToUpper(registro[5]) != "NULL" && strings.TrimSpace(registro[5]) != "" {
-                ticketStr := strings.ReplaceAll(registro[5], ",", ".")
-                tdc, err := strconv.ParseFloat(ticketStr, 64)
-                if err != nil {
-                    log.Printf("Erro ao parsear TICKET DA ÚLTIMA COMPRA: %v, registro: %v", err, registro)
-                } else {
-                    ticketDaUltimaCompra = &tdc
-                }
-            }
-
-            var lojaMaisFrequente *string
-            if strings.ToUpper(registro[6]) != "NULL" && strings.TrimSpace(registro[6]) != "" {
-                lmf := utils.NormalizarString(registro[6])
-                lojaMaisFrequente = &lmf
-            }
-
-            var lojaDaUltimaCompra *string
-            if strings.ToUpper(registro[7]) != "NULL" && strings.TrimSpace(registro[7]) != "" {
-                ldc := utils.NormalizarString(registro[7])
-                lojaDaUltimaCompra = &ldc
-            }
+            // Obtenha os valores corretamente
+            cpf := utils.RemoverCaracteresEspeciais(strings.TrimSpace(registros[0]))
+            private, _ := strconv.Atoi(strings.TrimSpace(registros[1]))
+            incompleto, _ := strconv.Atoi(strings.TrimSpace(registros[2]))
+            dataDaUltimaCompra := utils.ValidarData(strings.TrimSpace(registros[3]))
+            ticketMedio := utils.ParsearValorMonetario(strings.TrimSpace(registros[4]))
+            ticketDaUltimaCompra := utils.ParsearValorMonetario(strings.TrimSpace(registros[5]))
+            lojaMaisFrequente := strings.TrimSpace(registros[6])
+            lojaDaUltimaCompra := strings.TrimSpace(registros[7])
 
             if !ValidarCPF(cpf) {
                 log.Printf("CPF inválido: %v, registro: %v", cpf, registro)
@@ -160,9 +84,31 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            _, err = tx.Exec(context.Background(), stmt.SQL, cpf, private, incompleto, dataDaUltimaCompra, ticketMedio, ticketDaUltimaCompra, lojaMaisFrequente, lojaDaUltimaCompra)
+            // Iniciar uma transação por registro
+            tx, err := db.Pool.Begin(context.Background())
             if err != nil {
-                log.Printf("Falha ao inserir registro: %v, erro: %v", registro, err)
+                log.Printf("Erro ao iniciar transação: %v", err)
+                totalSkipped++
+                continue
+            }
+
+            // Inserir os dados
+            _, err = tx.Exec(context.Background(),
+                `INSERT INTO usuarios (cpf, private, incompleto, data_da_ultima_compra, ticket_medio, ticket_da_ultima_compra, loja_mais_frequente, loja_da_ultima_compra)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                cpf, private, incompleto, dataDaUltimaCompra, ticketMedio, ticketDaUltimaCompra, lojaMaisFrequente, lojaDaUltimaCompra)
+            
+            if err != nil {
+                log.Printf("Erro ao inserir registro: %v, erro: %v", registro, err)
+                tx.Rollback(context.Background())
+                totalSkipped++
+                continue
+            }
+
+            // Commit após inserção bem-sucedida
+            err = tx.Commit(context.Background())
+            if err != nil {
+                log.Printf("Erro ao confirmar transação: %v", err)
                 totalSkipped++
                 continue
             }
@@ -176,15 +122,9 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
             return
         }
 
-        err = tx.Commit(context.Background())
-        if err != nil {
-            log.Printf("Erro ao confirmar a transação: %v", err)
-            http.Error(w, "Erro ao salvar os dados", http.StatusInternalServerError)
-            return
-        }
-
         log.Printf("Arquivo processado com sucesso: %d registros processados, %d registros ignorados.", totalProcessed, totalSkipped)
         w.WriteHeader(http.StatusOK)
         w.Write([]byte(fmt.Sprintf("Arquivo processado com sucesso: %d registros processados, %d registros ignorados.", totalProcessed, totalSkipped)))
     }
 }
+
