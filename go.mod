@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/text v0.19.0
 )
 
 require (
@@ -18,4 +17,5 @@ require (
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	golang.org/x/crypto v0.20.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 )
