@@ -3,7 +3,7 @@ package handlers
 import (
     "strconv"
     "strings"
-    "go_project/pkg/utils"
+    "seu_projeto/pkg/utils"
 )
 
 func ValidarCPF(cpf string) bool {
