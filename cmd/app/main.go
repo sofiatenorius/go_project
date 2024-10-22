@@ -4,6 +4,7 @@ import (
     "log"
     "net/http"
     "os"
+    "time" // Import the time package
 
     "github.com/joho/godotenv"
     "seu_projeto/internal/handlers"
@@ -33,9 +34,18 @@ func main() {
         port = "8080"
     }
 
-    // Inicia o servidor
-    log.Printf("Servidor iniciado na porta %s...", port)
-    err = http.ListenAndServe(":"+port, nil)
+    // Cria uma instância de http.Server com timeouts configurados
+    server := &http.Server{
+        Addr:         ":" + port,
+        Handler:      nil, // Usa o DefaultServeMux
+        ReadTimeout:  60 * time.Second, // Tempo máximo para ler o cabeçalho da solicitação
+        WriteTimeout: 60 * time.Second, // Tempo máximo para escrever a resposta
+        IdleTimeout:  120 * time.Second, // Tempo máximo para conexões inativas
+    }
+
+    // Inicia o servidor com as configurações de timeout
+    log.Printf("Servidor iniciado na porta %s com timeouts configurados...", port)
+    err = server.ListenAndServe()
     if err != nil {
         log.Fatalf("Falha ao iniciar o servidor: %v", err)
     }
