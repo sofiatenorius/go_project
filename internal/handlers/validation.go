@@ -14,7 +14,7 @@ func ValidarCPF(cpf string) bool {
         return false
     }
 
-    // Verifica se todos os dígitos são iguais
+   
     allEqual := true
     for i := 1; i < 11 && allEqual; i++ {
         if cpf[i] != cpf[0] {
@@ -25,7 +25,7 @@ func ValidarCPF(cpf string) bool {
         return false
     }
 
-    // Calcula o primeiro dígito verificador
+  
     soma := 0
     for i := 0; i < 9; i++ {
         num, _ := strconv.Atoi(string(cpf[i]))
@@ -39,7 +39,7 @@ func ValidarCPF(cpf string) bool {
         return false
     }
 
-    // Calcula o segundo dígito verificador
+   
     soma = 0
     for i := 0; i < 10; i++ {
         num, _ := strconv.Atoi(string(cpf[i]))

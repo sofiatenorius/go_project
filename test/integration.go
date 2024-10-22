@@ -10,8 +10,8 @@ import (
     "os"
     "testing"
 
-    "go_project/internal/database"
-    "go_project/internal/handlers"
+    "seu_projeto/internal/database"
+    "seu_projeto/internal/handlers"
 )
 
 func TestCarregarArquivo(t *testing.T) {
@@ -64,8 +64,7 @@ func TestCarregarArquivo(t *testing.T) {
         t.Fatalf("Erro ao contar os usuários: %v", err)
     }
 
-    if count == 2 {
-        
+    if count == 2 { 
     } else {
         t.Errorf("Esperava-se 2 usuários inseridos, mas encontrou %d", count)
     }

@@ -37,7 +37,6 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
         }
         defer file.Close()
 
-        // Escaneando as linhas do arquivo
         scanner := bufio.NewScanner(file)
         firstLine := true
         var totalProcessed, totalSkipped int
@@ -45,14 +44,13 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
         for scanner.Scan() {
             linha := strings.TrimSpace(scanner.Text())
 
-            // Ignorar a primeira linha se for cabeçalho
             if firstLine {
                 firstLine = false
                 continue
             }
 
             reader := csv.NewReader(strings.NewReader(linha))
-            reader.Comma = '\t' // Ajuste para tabulação como delimitador
+            reader.Comma = '\t' 
             registro, err := reader.Read()
             if err != nil {
                 log.Printf("Erro ao ler registro: %v", err)
@@ -68,7 +66,7 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            // Obtenha os valores corretamente
+           
             cpf := utils.RemoverCaracteresEspeciais(strings.TrimSpace(registros[0]))
             private, _ := strconv.Atoi(strings.TrimSpace(registros[1]))
             incompleto, _ := strconv.Atoi(strings.TrimSpace(registros[2]))
@@ -84,7 +82,6 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            // Iniciar uma transação por registro
             tx, err := db.Pool.Begin(context.Background())
             if err != nil {
                 log.Printf("Erro ao iniciar transação: %v", err)
@@ -92,7 +89,7 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            // Inserir os dados
+           
             _, err = tx.Exec(context.Background(),
                 `INSERT INTO usuarios (cpf, private, incompleto, data_da_ultima_compra, ticket_medio, ticket_da_ultima_compra, loja_mais_frequente, loja_da_ultima_compra)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -105,7 +102,7 @@ func CarregarArquivo(db *database.Database) http.HandlerFunc {
                 continue
             }
 
-            // Commit após inserção bem-sucedida
+        
             err = tx.Commit(context.Background())
             if err != nil {
                 log.Printf("Erro ao confirmar transação: %v", err)
