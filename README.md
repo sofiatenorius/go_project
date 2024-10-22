@@ -1,29 +1,8 @@
 # Go Project
 
-## Visão Geral
-
-Este projeto em Go é uma aplicação web robusta que facilita o upload, processamento e armazenamento de arquivos CSV contendo dados de usuários. A aplicação é projetada com uma arquitetura modular, promovendo fácil manutenção, escalabilidade e testes eficientes. Utilizando tecnologias como Go, PostgreSQL e bibliotecas renomadas, o projeto garante performance, confiabilidade e segurança no processamento de dados.
-
-## Índice
-
-- [Visão Geral](#visão-geral)
-- [Funcionalidades](#funcionalidades)
-- [Arquitetura do Projeto](#arquitetura-do-projeto)
-  - [Estrutura de Pastas](#estrutura-de-pastas)
-  - [Descrição dos Módulos](#descrição-dos-módulos)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Instalação](#instalação)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Passo a Passo](#passo-a-passo)
-- [Uso](#uso)
-- [Testes](#testes)
-- [Contribuição](#contribuição)
-- [Licença](#licença)
-- [Contato](#contato)
-
 ## Funcionalidades
 
-- **Upload de Arquivos CSV**: Permite que os usuários façam upload de arquivos CSV através do endpoint `/upload`.
+- **Upload de Arquivos CSV & txt **: Permite que os usuários façam upload de arquivos CSV através do endpoint `/upload`.
 - **Validação de Dados**: Valida campos dos usuários, incluindo a verificação de CPF e formatação de datas e valores monetários.
 - **Armazenamento no Banco de Dados**: Insere dados validados em uma tabela `usuarios` no PostgreSQL.
 - **Gerenciamento de Erros e Logs**: Registra erros e atividades, facilitando a monitoração e depuração.
@@ -133,8 +112,7 @@ go_project/
 
 - **Go**: Instale a versão mais recente do [Go](https://golang.org/dl/).
 - **PostgreSQL**: Instale e configure o [PostgreSQL](https://www.postgresql.org/download/).
-- **Git**: Para clonar o repositório.
-- **Make** (opcional): Para facilitar comandos de build e execução.
+
 
 ### Passo a Passo
 
